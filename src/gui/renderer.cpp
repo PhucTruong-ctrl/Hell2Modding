@@ -1040,6 +1040,21 @@ namespace big
 		}
 
 		if (ImGui::GetCurrentContext() && m_command_queue && gMainRenderTargetResource[0])
+
+			static bool logged_gate = false;
+			if (!logged_gate)
+			{
+				logged_gate = true;
+
+				const auto draw_data = ImGui::GetDrawData();
+				LOG(INFO) << "overlay diag: context=" << (void*)ImGui::GetCurrentContext()
+						   << " queue=" << (void*)m_command_queue << " rtv0=" << (void*)gMainRenderTargetResource[0]
+						   << " backendUserData=" << (void*)ImGui::GetIO().BackendRendererUserData
+						   << " displaySize=" << ImGui::GetIO().DisplaySize.x << "x" << ImGui::GetIO().DisplaySize.y
+						   << " drawData=" << (void*)draw_data << " valid=" << (draw_data && draw_data->Valid)
+						   << " cmdLists=" << (draw_data ? static_cast<int>(draw_data->CmdListsCount) : -1)
+						   << " totalVerts=" << (draw_data ? static_cast<int>(draw_data->TotalVerts) : -1);
+			}
 		{
 			static ImDrawDataSnapshot snapshot;
 			auto draw_data_to_render = ImGui::GetDrawData();

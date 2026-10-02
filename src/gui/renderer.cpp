@@ -700,7 +700,20 @@ namespace big
 
 	void renderer::init_fonts()
 	{
-		folder windows_fonts(std::filesystem::path(std::getenv("SYSTEMROOT")) / "Fonts");
+		// std::getenv("SYSTEMROOT") is null on Wine/Proton, and the YaHei font is optional
+		wchar_t windows_dir[MAX_PATH]{};
+		const auto windows_dir_size = GetWindowsDirectoryW(windows_dir, MAX_PATH);
+		const auto system_root     = std::getenv("SYSTEMROOT");
+		std::filesystem::path windows_root{};
+		if (windows_dir_size)
+		{
+			windows_root = std::filesystem::path(std::wstring(windows_dir, windows_dir_size));
+		}
+		else if (system_root)
+		{
+			windows_root = std::filesystem::path(system_root);
+		}
+		folder windows_fonts(windows_root / "Fonts");
 
 		file font_file_path = windows_fonts.get_file("./msyh.ttc");
 		if (!font_file_path.exists())
@@ -708,12 +721,15 @@ namespace big
 			font_file_path = windows_fonts.get_file("./msyh.ttf");
 		}
 		auto font_file            = std::ifstream(font_file_path.get_path(), std::ios::binary | std::ios::ate);
-		const auto font_data_size = static_cast<int>(font_file.tellg());
-		const auto font_data      = std::make_unique<uint8_t[]>(font_data_size);
+		const auto font_data_size = font_file ? static_cast<int>(font_file.tellg()) : 0;
+		const auto font_data      = font_data_size > 0 ? std::make_unique<uint8_t[]>(font_data_size) : nullptr;
 
-		font_file.seekg(0);
-		font_file.read(reinterpret_cast<char*>(font_data.get()), font_data_size);
-		font_file.close();
+		if (font_data)
+		{
+			font_file.seekg(0);
+			font_file.read(reinterpret_cast<char*>(font_data.get()), font_data_size);
+			font_file.close();
+		}
 
 		auto& io = ImGui::GetIO();
 
@@ -731,8 +747,11 @@ namespace big
 			                               &fnt_cfg,
 			                               io.Fonts->GetGlyphRangesDefault());
 			fnt_cfg.MergeMode = true;
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 20.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 20.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			if (font_data)
+			{
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 20.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 20.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			}
 			io.Fonts->Build();
 		}
 
@@ -743,8 +762,11 @@ namespace big
 
 			font_title = io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(font_storopia), sizeof(font_storopia), 28.f, &fnt_cfg);
 			fnt_cfg.MergeMode = true;
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 28.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 28.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			if (font_data)
+			{
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 28.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 28.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			}
 			io.Fonts->Build();
 		}
 
@@ -755,8 +777,11 @@ namespace big
 
 			font_sub_title = io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(font_storopia), sizeof(font_storopia), 24.f, &fnt_cfg);
 			fnt_cfg.MergeMode = true;
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 24.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 24.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			if (font_data)
+			{
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 24.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 24.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			}
 			io.Fonts->Build();
 		}
 
@@ -767,8 +792,11 @@ namespace big
 
 			font_small = io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(font_storopia), sizeof(font_storopia), 18.f, &fnt_cfg);
 			fnt_cfg.MergeMode = true;
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 18.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
-			io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 18.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			if (font_data)
+			{
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 18.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+				io.Fonts->AddFontFromMemoryTTF(font_data.get(), font_data_size, 18.f, &fnt_cfg, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+			}
 			io.Fonts->Build();
 		}
 

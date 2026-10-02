@@ -2489,17 +2489,20 @@ static void read_game_pdb()
 	if (!pdbFile.baseAddress)
 	{
 		LOGF(ERROR, "Cannot memory-map file {}", (char *)game_pdb_path.u8string().c_str());
+		return;
 	}
 
 	if (IsError(PDB::ValidateFile(pdbFile.baseAddress, pdbFile.len)))
 	{
 		MemoryMappedFile::Close(pdbFile);
+		return;
 	}
 
 	const PDB::RawFile rawPdbFile = PDB::CreateRawFile(pdbFile.baseAddress);
 	if (IsError(PDB::HasValidDBIStream(rawPdbFile)))
 	{
 		MemoryMappedFile::Close(pdbFile);
+		return;
 	}
 
 	const PDB::InfoStream infoStream(rawPdbFile);
@@ -2508,6 +2511,7 @@ static void read_game_pdb()
 		LOGF(ERROR, "PDB was linked using unsupported option /DEBUG:FASTLINK");
 
 		MemoryMappedFile::Close(pdbFile);
+		return;
 	}
 
 	const auto h = infoStream.GetHeader();
@@ -2534,12 +2538,14 @@ static void read_game_pdb()
 	if (!HasValidDBIStreams(rawPdbFile, dbiStream))
 	{
 		MemoryMappedFile::Close(pdbFile);
+		return;
 	}
 
 	const PDB::TPIStream tpiStream = PDB::CreateTPIStream(rawPdbFile);
 	if (PDB::HasValidTPIStream(rawPdbFile) != PDB::ErrorCode::Success)
 	{
 		MemoryMappedFile::Close(pdbFile);
+		return;
 	}
 
 	// in order to keep the example easy to understand, we load the PDB data serially.

@@ -999,6 +999,30 @@ namespace big
 			{
 				m_command_queue = *(ID3D12CommandQueue**)((uintptr_t)pSwapChain + m_command_queue_offset);
 			}
+
+			// On Wine/Proton the game's swapchain does not expose the command queue at the offset we
+			// discovered on our dummy swapchain, which leaves ImGui without a queue and the overlay invisible.
+			if (!m_command_queue || IsBadReadPtr(m_command_queue, sizeof(void*)))
+			{
+				m_command_queue = nullptr;
+
+				ID3D12Device* game_device = nullptr;
+				if (SUCCEEDED(pSwapChain->GetDevice(IID_PPV_ARGS(&game_device))) && game_device)
+				{
+					D3D12_COMMAND_QUEUE_DESC queue_desc{};
+					queue_desc.Type  = D3D12_COMMAND_LIST_TYPE_DIRECT;
+					queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+
+					const auto hr = game_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&m_command_queue));
+					LOG(INFO) << "Fallback command queue creation on the game device: " << HEX_TO_UPPER(hr);
+
+					game_device->Release();
+				}
+				else
+				{
+					LOG(ERROR) << "Could not obtain the game device for a fallback command queue";
+				}
+			}
 		}
 
 		if (!ImGui::GetIO().BackendRendererUserData)
